@@ -1,0 +1,12 @@
+layer{
+    type: "Python"
+    name: "averaged_precision"
+    bottom: "ground_truth"
+    bottom: "prediction"
+    top: "ap_metric"
+    python_param{
+        module: "py_averaged_precision_layer"
+        layer: "APLayer"
+        param_str: "10" # this param tells the layer to choose top 10 scores in the input blob. 
+    }
+}

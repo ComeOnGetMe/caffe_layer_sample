@@ -1,0 +1,13 @@
+layer{
+    type: "Python"
+    name: "recall_precision"
+    bottom: "ground_truth"
+    bottom: "prediction"
+    top: "precision"
+    top: "recall"
+    python_param{
+        module: "recall_precision_layer"
+        layer: "RecallPrecisionLayer"
+        param_str: "10" # this param tells the layer to choose top 10 scores in the input blob. 
+    }
+}
