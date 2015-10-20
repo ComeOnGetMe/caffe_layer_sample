@@ -4,11 +4,9 @@ import numpy as np
 class APLayer():
 
     def setup(self, bottom, top):
-        self.k = 3       #int(self.param_str)
+        self.k = int(self.param_str)              # Assign value when testing
 
         assert(len(bottom) == 2)
-        assert(len(top) == 1)
-        #Do I need to check the shape of ground turth and prediction result?
 
     def reshape(self, bottom, top):
         top[0].reshape(1)
@@ -23,35 +21,29 @@ class APLayer():
             sample_gt = ground_truth[i]
             sample_pred = prediction[i]
 
-            topk = set(np.argpartition(-sample_pred, self.k)[:self.k])
-            rp_pairs = [[recall(), precision()] for j in xrange(k)]
-
-            true_positive, false_positive, false_negative = 0, 0, 0
-            for j in xrange(len(sample_pred)):
-                if sample_gt[j] == 1:
-                    if j in topk:
-                        true_positive += 1
-                    else:
-                        false_negative += 1
-                elif j in topk:
-                    false_positive += 1
-            precision_lst[i] = float(true_positive) / (true_positive + false_positive)
-            recall_lst[i] = float(true_positive) / (true_positive + false_negative)
-        top[0].data = sum(ap_lst) / data_size
+            topk = np.argpartition(-sample_pred, self.k)[:self.k]
+            topk = sorted(topk, reverse = True, key = lambda x: sample_pred[x])
+            rp_pairs = [self.recallPrecision(set(topk[:j]), sample_gt) for j in xrange(1, self.k + 1)]
+            rp_pairs.sort(key = lambda x:x[0])
+            ap = rp_pairs[0][1] * rp_pairs[0][0]
+            for j in xrange(1, self.k):
+                ap += (rp_pairs[j - 1][1] + rp_pairs[j][1]) * (rp_pairs[j][0] - rp_pairs[j - 1][0]) / 2
+            ap_lst[i] = ap
+        top[0].data[:] = sum(ap_lst) / data_size            # Remove '[:]' when testing
 
     def backward(self):
         pass
 
-    def recallPrecision(sample, truth):
+    def recallPrecision(self, prediction, truth):
         true_positive, false_positive, false_negative = 0, 0, 0
         for j in xrange(len(truth)):
             if truth[j] == 1:
-                if j in sample:
+                if j in prediction:
                     true_positive += 1
                 else:
                     false_negative += 1
-            elif j in sample:
+            elif j in prediction:
                 false_positive += 1
         precision = float(true_positive) / (true_positive + false_positive)
         recall = float(true_positive) / (true_positive + false_negative)
-        return 
+        return [recall, precision]
